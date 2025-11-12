@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>alvo Clothes</title>
+<style>
+  body { font-family: Arial,sans-serif; direction: rtl; margin:0; padding:0; background:#fff; color:#222; }
+  header {
+    position: sticky; top:0; background:#fff; border-bottom:2px solid #004aad;
+    display:flex; justify-content: space-between; align-items:center; padding:10px 15px; z-index:100;
+  }
+  .logo { font-size: 24px; font-weight: bold; color:#004aad; }
+  nav button { background:none; border:none; font-size:20px; cursor:pointer; color:#004aad; margin-left:15px; }
+  #cart-count {
+    background:#004aad; color:#fff; padding:2px 7px; border-radius:50%; font-size:12px;
+    min-width:18px; display:inline-block; text-align:center; position: relative; top: -10px; margin-left: 5px;
+  }
+  main { max-width: 960px; margin: 20px auto; padding: 0 15px 40px; }
+  nav.breadcrumb { font-size: 14px; color:#555; margin-bottom: 10px; }
+  nav.breadcrumb a { color:#004aad; text-decoration: underline; cursor: pointer; }
+  nav.breadcrumb span { margin: 0 10px; }
+  h1 { font-weight: 900; margin-bottom: 15px; font-size: 28px; }
+  p.description { max-width: 600px; margin-bottom: 25px; font-size: 16px; }
+  .controls { display: flex; align-items:center; gap: 20px; margin-bottom: 25px; flex-wrap: wrap; }
+  button.filter-sort {
+    border: 2px solid #004aad; padding: 10px 16px; font-weight: 700; background: none; color:#004aad;
+    border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+  button.filter-sort:hover { background: #004aad; color: white; }
+  label { cursor: pointer; font-size: 14px; }
+  input[type="checkbox"] { margin-left: 8px; cursor: pointer; accent-color: #004aad; }
+  .products-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 16px;
+  }
+  .product-card {
+    background: #f7f8fa; border-radius: 8px; padding: 12px; cursor: pointer; position: relative;
+    transition: box-shadow 0.3s ease;
+    display: flex; flex-direction: column;
+  }
+  .product-card:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+  .icon-fav, .icon-cart {
+    position: absolute; font-size: 22px; cursor: pointer; user-select: none; transition: color 0.3s;
+    top: 14px;
+  }
+  .icon-fav { left: 14px; color: #aaa; }
+  .icon-fav.active { color: #e60023; }
+  .icon-cart { right: 14px; color: #004aad; }
+  .product-img {
+    width: 100%; height: 160px; object-fit: contain; border-radius: 5px; background: white;
+    margin-bottom: 10px;
+  }
+  .product-name { font-weight: 700; font-size: 15px; margin-bottom: 6px; min-height: 44px; }
+  .product-price { font-weight: 700; color: #004aad; margin-bottom: 6px; }
+  .product-info { font-size: 13px; color: #666; }
+</style>
+</head>
+<body>
+
+<header>
+  <button id="btn-menu" aria-label="القائمة">&#9776;</button>
+  <div class="logo">alvo</div>
+  <nav>
+    <button id="btn-fav" aria-label="المفضلة">&#10084;</button>
+    <button id="btn-account" aria-label="الحساب">&#128100;</button>
+    <button id="btn-search" aria-label="البحث">&#128269;</button>
+    <button id="btn-cart" aria-label="السلة">🛒<span id="cart-count">0</span></button>
+  </nav>
+</header>
+
+<main>
+  <nav class="breadcrumb" aria-label="مسار التصفح">
+    <a href="#">LIFESTYLE</a><span>/</span><a href="#">Collections</a><span>/</span><span>alvo Clothes</span>
+  </nav>
+
+  <h1>alvo HOODIES & PANTS COLLECTION</h1>
+  <p class="description">اكتشف أفضل تشكيلات الهوديز والبناطيل من alvo. راحة وأناقة لكل يوم.</p>
+
+  <div class="controls" aria-label="أدوات التحكم">
+    <button class="filter-sort" id="filter-sort-btn">Filter &amp; Sort ⚙️</button>
+    <label for="large-image-checkbox">Large Images
+      <input type="checkbox" id="large-image-checkbox" aria-label="تكبير الصور" />
+    </label>
+  </div>
+
+  <section class="products-grid" id="products-grid" aria-live="polite" aria-label="عرض المنتجات">
+    <!-- سيتم تحميل المنتجات هنا -->
+  </section>
+</main>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+<script>
+  // استبدل بياناتك الخاصة هنا من مشروع Firebase الذي أنشأته:
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY_HERE",
+    authDomain: "YOUR_AUTHDOMAIN_HERE",
+    projectId: "YOUR_PROJECT_ID_HERE",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MSG_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  // تهيئة Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  const productsGrid = document.getElementById('products-grid');
+  const cartCountElem = document.getElementById('cart-count');
+  let cartCount = 0;
+
+  // تحميل المنتجات من Firestore وعرضها
+  function loadProducts() {
+    productsGrid.innerHTML = "جاري تحميل المنتجات...";
+    db.collection("products").get().then((querySnapshot) => {
+      productsGrid.innerHTML = "";
+      querySnapshot.forEach(doc => {
+        const product = doc.data();
+        product.id = doc.id;
+
+        const card = document.createElement('article');
+        card.className = "product-card";
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        card.setAttribute("aria-label", `عرض تفاصيل المنتج ${product.name}`);
+
+        // أيقونة المفضلة
+        const fav = document.createElement('span');
+        fav.className = "icon-fav";
+        fav.innerHTML = "❤";
+        fav.title = "إضافة / إزالة من المفضلة";
+        fav.onclick = e => {
+          e.stopPropagation();
+          fav.classList.toggle('active');
+        };
+
+        // أيقونة إضافة للسلة
+        const cartBtn = document.createElement('span');
+        cartBtn.className = "icon-cart";
+        cartBtn.textContent = "🛒";
+        cartBtn.title = `أضف ${product.name} إلى السلة`;
+        cartBtn.onclick = e => {
+          e.stopPropagation();
+          cartCount++;
+          cartCountElem.textContent = cartCount;
+          alert(`تم إضافة "${product.name}" إلى السلة.`);
+          // هنا يمكن توسعة حفظ السلة في قاعدة بيانات للمستخدم
+        };
+
+        const img = document.createElement('img');
+        img.className = "product-img";
+        img.src = product.image;
+        img.alt = product.name;
+
+        const name = document.createElement('div');
+        name.className = "product-name";
+        name.textContent = product.name;
+
+        const price = document.createElement('div');
+        price.className = "product-price";
+        price.textContent = `EGP ${product.price.toLocaleString()}.00`;
+
+        const info = document.createElement('div');
+        info.className = "product-info";
+        info.textContent = `Colors: ${product.colors}`;
+
+        card.appendChild(fav);
+        card.appendChild(cartBtn);
+        card.appendChild(img);
+        card.appendChild(name);
+        card.appendChild(price);
+        card.appendChild(info);
+
+        // عند الضغط على المنتج يمكن فتح صفحة تفاصيل (غير مفعلة هنا)
+        card.onclick = () => alert(`صفحة تفاصيل "${product.name}" تحت التطوير.`);
+
+        productsGrid.appendChild(card);
+      });
+    }).catch(err => {
+      productsGrid.innerHTML = `<p>خطأ في تحميل المنتجات: ${err.message}</p>`;
+    })
+  }
+
+  loadProducts();
+
+  // تكبير الصور عند تفعيل الخيار
+  document.getElementById('large-image-checkbox').addEventListener('change', e => {
+    const imgs = document.querySelectorAll('.product-img');
+    imgs.forEach(img => {
+      img.style.height = e.target.checked ? '250px' : '160px';
+    });
+  });
+
+  // زر تصفية وفرز - رسالة مؤقتة
+  document.getElementById('filter-sort-btn').addEventListener('click', () => {
+    alert('ميزة التصفية والفرز قيد التطوير...');
+  });
+
+  // تسجيل دخول / حساب (مثال بسيط)
+  document.getElementById('btn-account').addEventListener('click', () => {
+    const email = prompt("أدخل بريدك الإلكتروني");
+    const pass = prompt("أدخل كلمة المرور");
+    if(email && pass){
+      auth.signInWithEmailAndPassword(email, pass)
+        .then(() => alert("تم تسجيل الدخول"))
+        .catch((error) => {
+          if(error.code === "auth/user-not-found"){
+            auth.createUserWithEmailAndPassword(email, pass)
+              .then(() => alert("تم إنشاء حساب جديد وتسجيل الدخول"))
+              .catch(err => alert("خطأ: "+err.message));
+          } else alert("خطأ: "+error.message);
+        });
+    }
+  });
+
+</script>
+</body>
+</html>
