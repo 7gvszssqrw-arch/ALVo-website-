@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>alvo - ملابس هودي وبناطيل</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #fff; direction: rtl; margin: 0; padding: 0; color: #222; }
+  header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #004aad; padding: 10px 15px; background: white; position: sticky; top: 0; z-index: 10; }
+  .logo { font-weight: bold; font-size: 24px; color: #004aad; }
+  nav { display: flex; gap: 16px; }
+  nav button { background: none; border: none; font-size: 20px; cursor: pointer; color: #004aad; }
+  #cart-count { background: #004aad; color: white; font-size: 12px; border-radius: 50%; padding: 2px 7px; position: relative; top: -10px; margin-left: 5px; min-width: 18px; text-align: center; }
+  main { max-width: 960px; margin: 20px auto; padding: 0 15px 40px; }
+  nav.breadcrumb { font-size: 14px; margin-bottom: 10px; color:#555; }
+  nav.breadcrumb a { color:#004aad; text-decoration: underline; cursor: pointer; }
+  nav.breadcrumb span { margin: 0 6px; }
+  h1 { font-weight: bold; font-size: 28px; margin-bottom: 10px; }
+  p.description { margin-bottom: 25px; font-size: 16px; max-width: 600px; color: #444; }
+  .controls { display: flex; gap: 20px; align-items: center; margin-bottom: 25px; flex-wrap: wrap; }
+  button.filter-sort { border: 2px solid #004aad; background: none; color: #004aad; font-weight: 700; padding: 8px 14px; border-radius: 6px; cursor: pointer; transition: background 0.3s, color 0.3s; }
+  button.filter-sort:hover { background: #004aad; color: white; }
+  label { font-size: 14px; cursor: pointer; user-select: none; }
+  input[type=checkbox] { margin-left: 8px; cursor: pointer; accent-color: #004aad; }
+  .products-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 16px; }
+  .product-card { background: #f7f8fa; border-radius: 8px; padding: 12px; position: relative; cursor: pointer; transition: box-shadow 0.3s ease; }
+  .product-card:hover { box-shadow: 0 5px 15px #aaa; }
+  img.product-img { width: 100%; height: 160px; object-fit: contain; border-radius: 5px; margin-bottom: 10px; background: white; }
+  .icon-fav, .icon-cart { position: absolute; font-size: 22px; cursor: pointer; user-select: none; transition: color 0.3s; }
+  .icon-fav { top: 14px; left: 14px; color: #aaa; }
+  .icon-fav.active { color: #e60023; }
+  .icon-cart { top: 14px; right: 14px; color: #004aad; }
+  .product-name { font-weight: bold; font-size: 15px; margin-bottom: 6px; min-height: 44px; }
+  .product-price { font-weight: 700; color: #004aad; margin-bottom: 6px; }
+  .product-info { font-size: 13px; color: #666; }
+</style>
+</head>
+<body>
+
+<header>
+  <button aria-label="القائمة">&#9776;</button>
+  <div class="logo" role="img" aria-label="شعار الموقع">alvo</div>
+  <nav>
+    <button aria-label="المفضلة">&#10084;</button>
+    <button aria-label="الحساب">&#128100;</button>
+    <button aria-label="بحث">&#128269;</button>
+    <button aria-label="السلة">🛒<span id="cart-count">0</span></button>
+  </nav>
+</header>
+
+<main>
+  <nav class="breadcrumb" aria-label="مسار التصفح">
+    <a href="#">LIFESTYLE</a><span>/</span><a href="#">Collections</a><span>/</span><span>alvo Clothes</span>
+  </nav>
+
+  <h1>alvo HOODIES & PANTS COLLECTION</h1>
+  <p class="description">
+    اكتشف أفضل تشكيلات الهوديز والبناطيل من alvo. راحة وأناقة لكل يوم.
+  </p>
+
+  <div class="controls">
+    <button class="filter-sort" id="filter-sort-btn">Filter &amp; Sort ⚙️</button>
+    <label for="large-image-checkbox">Large Images
+      <input type="checkbox" id="large-image-checkbox" aria-label="تكبير صور المنتجات" />
+    </label>
+  </div>
+
+  <section class="products-grid" id="products-grid" aria-live="polite" aria-label="عرض المنتجات">
+    <!-- المنتجات ستُعرض هنا بواسطة JavaScript -->
+  </section>
+</main>
+
+<script>
+  const products = [
+    { id:1, name:"هودي أسود كلاسيكي", price:1200, colors:2, img:"https://via.placeholder.com/250?text=هودي+أسود" },
+    { id:2, name:"بنطلون رياضي رمادي", price:900, colors:3, img:"https://via.placeholder.com/250?text=بنطلون" },
+    { id:3, name:"هودي رمادي بغطاء", price:1300, colors:2, img:"https://via.placeholder.com/250?text=هودي+رمادي" },
+    { id:4, name:"بنطلون جينز أزرق", price:1100, colors:1, img:"https://via.placeholder.com/250?text=جينز" }
+  ];
+
+  const productGrid = document.getElementById('products-grid');
+  const cartCount = document.getElementById('cart-count');
+  let cartTotal = 0;
+
+  function renderProducts() {
+    productGrid.innerHTML = '';
+    products.forEach(product=>{
+      const card = document.createElement('article');
+      card.className = 'product-card';
+      card.tabIndex = 0;
+
+      // أيقونة المفضلة
+      const favIcon = document.createElement('span');
+      favIcon.className = 'icon-fav';
+      favIcon.innerHTML = '❤';
+      favIcon.title = "إضافة/إزالة من المفضلة";
+      favIcon.addEventListener('click', e => {
+        e.stopPropagation();
+        favIcon.classList.toggle('active');
+      });
+
+      // أيقونة إضافة للعربة
+      const cartIcon = document.createElement('span');
+      cartIcon.className = 'icon-cart';
+      cartIcon.textContent = '🛒';
+      cartIcon.title = "إضافة إلى السلة";
+      cartIcon.addEventListener('click', e => {
+        e.stopPropagation();
+        cartTotal++;
+        cartCount.textContent = cartTotal;
+        alert(`تم إضافة "${product.name}" إلى السلة.`);
+      });
+
+      const img = document.createElement('img');
+      img.className = 'product-img';
+      img.src = product.img;
+      img.alt = product.name;
+
+      const name = document.createElement('div');
+      name.className = 'product-name';
+      name.textContent = product.name;
+
+      const price = document.createElement('div');
+      price.className = 'product-price';
+      price.textContent = `EGP ${product.price.toLocaleString()}.00`;
+
+      const info = document.createElement('div');
+      info.className = 'product-info';
+      info.textContent = `Colors: ${product.colors}`;
+
+      card.appendChild(favIcon);
+      card.appendChild(cartIcon);
+      card.appendChild(img);
+      card.appendChild(name);
+      card.appendChild(price);
+      card.appendChild(info);
+
+      productGrid.appendChild(card);
+    });
+  }
+
+  const largeImageCheckbox = document.getElementById('large-image-checkbox');
+  largeImageCheckbox.addEventListener('change', () => {
+    const imgs = document.querySelectorAll('.product-img');
+    if (largeImageCheckbox.checked) {
+      imgs.forEach(img => img.style.height = '250px');
+    } else {
+      imgs.forEach(img => img.style.height = '160px');
+    }
+  });
+
+  renderProducts();
+
+  // زر تصفية وفرز فقط يظهر رسالة لآن
+  document.getElementById('filter-sort-btn').addEventListener('click', () => {
+    alert('ميزة التصفية والفرز قيد التطوير...');
+  });
+</script>
+
+</body>
+</html>
