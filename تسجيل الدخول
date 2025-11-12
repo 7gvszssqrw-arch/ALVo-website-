@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تسجيل الدخول - alvo</title>
+  <style>
+    body { font-family: Arial, sans-serif; direction: rtl; margin: 0; padding: 20px; background: #fff; color: #222; text-align: center; }
+    form { max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; }
+    input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+    button { padding: 10px 20px; background: #004aad; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #003080; }
+    .toggle { margin-top: 10px; cursor: pointer; color: #004aad; }
+  </style>
+</head>
+<body>
+  <h1>تسجيل الدخول أو إنشاء حساب</h1>
+  <form id="auth-form">
+    <input type="email" id="email" placeholder="البريد الإلكتروني" required />
+    <input type="password" id="password" placeholder="كلمة المرور" required />
+    <button type="submit" id="submit-btn">تسجيل الدخول</button>
+    <p class="toggle" id="toggle-mode">ليس لديك حساب؟ أنشئ واحدًا</p>
+  </form>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY_HERE",  // استبدل بإعدادات Firebase الخاصة بك
+      authDomain: "YOUR_AUTHDOMAIN_HERE",
+      projectId: "YOUR_PROJECT_ID_HERE",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MSG_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    let isSignUp = false;
+    const form = document.getElementById('auth-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const toggle = document.getElementById('toggle-mode');
+
+    toggle.onclick = () => {
+      isSignUp = !isSignUp;
+      submitBtn.textContent = isSignUp ? 'إنشاء حساب' : 'تسجيل الدخول';
+      toggle.textContent = isSignUp ? 'لديك حساب؟ سجل الدخول' : 'ليس لديك حساب؟ أنشئ واحدًا';
+    };
+
+    form.onsubmit = e => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      if (isSignUp) {
+        auth.createUserWithEmailAndPassword(email, password).then(() => { alert('تم إنشاء الحساب!'); window.location.href = 'index.html'; }).catch(err => alert('خطأ: ' + err.message));
+      } else {
+        auth.signInWithEmailAndPassword(email, password).then(() => { alert('تم تسجيل الدخول!'); window.location.href = 'index.html'; }).catch(err => alert('خطأ: ' + err.message));
+      }
+    };
+  </script>
+</body>
+</html>
